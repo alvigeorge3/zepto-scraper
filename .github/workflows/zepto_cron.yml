@@ -26,6 +26,12 @@ jobs:
           pip install playwright
           playwright install chromium
 
+      - name: Debug Directory (ls -R)
+        run: |
+          ls -R
+          pwd
+          python -c "import sys; print(sys.path)"
+
       - name: Run Scraper
         env:
           # GitHub Secrets must be configured in repository settings
