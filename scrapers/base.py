@@ -26,7 +26,21 @@ class BaseScraper(ABC):
             {}, # Default bundled as fallback
         ]
         
+        # Anti-detection arguments
+        stealth_args = [
+            '--disable-blink-features=AutomationControlled',
+            '--disable-infobars',
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-extensions',
+            '--disable-remote-fonts',
+            '--disable-gpu' # Often helpful in headless
+        ]
+
         for browser_kwargs in browsers_to_try:
+            # Merge stealth args
+            browser_kwargs['args'] = browser_kwargs.get('args', []) + stealth_args
+            
             try:
                 self.browser = await self.playwright.chromium.launch(headless=self.headless, **browser_kwargs)
                 logger.info(f"Launched browser with kwargs: {browser_kwargs}")
@@ -39,8 +53,16 @@ class BaseScraper(ABC):
 
         self.context = await self.browser.new_context(
              viewport={'width': 1920, 'height': 1080},
-             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
         )
+        
+        # KEY STEALTH SCRIPT: Remove navigator.webdriver property
+        await self.context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+        """)
+        
         self.page = await self.context.new_page()
 
     async def stop(self):
